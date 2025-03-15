@@ -1,103 +1,158 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import {
+  DndProvider,
+  useDrag,
+  useDrop,
+  DragSourceMonitor,
+  DropTargetMonitor,
+} from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import FilterGroup from "@/components/filter-group";
+import { TaskItem } from "@/components/task-item";
+
+interface Task {
+  id: number;
+  text: string;
+  status: "not_started" | "in_progress" | "completed";
+}
+
+interface DragItem {
+  id: number;
+  status: Task["status"];
+}
+
+interface DraggableTaskItemProps {
+  task: Task;
+}
+
+function DraggableTaskItem({ task }: DraggableTaskItemProps) {
+  const [{ isDragging }, drag] = useDrag<
+    DragItem,
+    void,
+    { isDragging: boolean }
+  >({
+    type: "TASK",
+    item: { id: task.id, status: task.status },
+    collect: (monitor: DragSourceMonitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  return (
+    <div ref={drag} style={{ opacity: isDragging ? 0.5 : 1 }}>
+      <TaskItem task={task} />
+    </div>
+  );
+}
+
+interface DroppableColumnProps {
+  status: Task["status"];
+  title: string;
+  tasks: Task[];
+  color: string;
+  onDropTask: (id: number, newStatus: Task["status"]) => void;
+}
+
+function DroppableColumn({
+  status,
+  title,
+  tasks,
+  color,
+  onDropTask,
+}: DroppableColumnProps) {
+  const [, drop] = useDrop<DragItem, void, unknown>({
+    accept: "TASK",
+    drop: (item: DragItem, monitor: DropTargetMonitor) => {
+      if (item.status !== status) {
+        onDropTask(item.id, status);
+      }
+    },
+  });
+
+  return (
+    <div
+      ref={drop}
+      className={`h-full w-full overflow-y-scroll p-4 rounded-lg border border-gray-200 ${color}`}
+    >
+      <h1 className="text-lg font-bold pb-4">{title}</h1>
+      <div
+        className={
+          tasks.length == 0
+            ? "flex items-center justify-center h-full"
+            : "flex flex-col gap-4"
+        }
+      >
+        {tasks.length == 0 ? (
+          <p>Empty</p>
+        ) : (
+          tasks.map((task) => <DraggableTaskItem key={task.id} task={task} />)
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [tasks, setTasks] = useState<Task[]>([
+    { id: 1, text: "Task 1", status: "not_started" },
+    { id: 2, text: "Task 2", status: "not_started" },
+    { id: 3, text: "Task 3", status: "not_started" },
+    { id: 4, text: "Task 4", status: "in_progress" },
+    { id: 5, text: "Task 5", status: "in_progress" },
+    { id: 6, text: "Task 6", status: "completed" },
+  ]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const moveTask = (id: number, newStatus: Task["status"]) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id ? { ...task, status: newStatus } : task
+      )
+    );
+  };
+
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <div className="flex h-screen p-8 gap-8">
+        {/* Filters */}
+        <div className="flex flex-col w-1/6 gap-8">
+          <FilterGroup
+            title="Categories"
+            subtitle="These are your categories"
+            buttonText="Add a category"
+          />
+          <FilterGroup
+            title="People"
+            subtitle="There are your people"
+            buttonText="Add a person"
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        {/* Task columns */}
+        <div className="flex gap-8 w-5/6 bg-gray-50 border border-gray-200 rounded-lg p-8">
+          <DroppableColumn
+            status="not_started"
+            title="📝 Not started"
+            tasks={tasks.filter((task) => task.status === "not_started")}
+            color="bg-gray-50"
+            onDropTask={moveTask}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+          <DroppableColumn
+            status="in_progress"
+            title="⏳ In progress"
+            tasks={tasks.filter((task) => task.status === "in_progress")}
+            color="bg-blue-50"
+            onDropTask={moveTask}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
+          <DroppableColumn
+            status="completed"
+            title="✅ Completed"
+            tasks={tasks.filter((task) => task.status === "completed")}
+            color="bg-green-50"
+            onDropTask={moveTask}
           />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        </div>
+      </div>
+    </DndProvider>
   );
 }
