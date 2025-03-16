@@ -7,11 +7,13 @@ export default function CategoryFilter({
   subtitle,
   buttonText,
   items,
+  onCategoryChange,
 }: {
   title: string;
   subtitle: string;
   buttonText: string;
   items: Category[];
+  onCategoryChange: (categoryId : number) => void;
 }) {
   return (
     <div className="flex flex-col h-full bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -20,7 +22,7 @@ export default function CategoryFilter({
       <div className="flex-1 overflow-y-auto">
         {items.map((item) => (
           <span key={item.id} className="flex items-center gap-4 pb-4">
-            <Checkbox />
+            <Checkbox onClick={() => onCategoryChange(item.id)} checked={item.isSelected} />
             <p>{item.name}</p>
           </span>
         ))}
