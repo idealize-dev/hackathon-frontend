@@ -50,7 +50,7 @@ export default function Home() {
           id : task.id,
           title: task.title!,
           description: task.description!,
-          status: "not_started",
+          status: task.status as Task["status"],
           categories : task.email_categories.map((category) => {
             return {
               id : category.category_id!.id,
@@ -78,12 +78,16 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
 
-  const moveTask = (id: number, newStatus: Task["status"]) => {
+  const moveTask = async (id: number, newStatus: Task["status"]) => {
     setFilteredTasks((prev) =>
       prev.map((task) =>
         task.id === id ? { ...task, status: newStatus } : task
       )
     );
+
+    const {error} = await supabase.from("classified_emails").update({ status: newStatus }).eq("id", id);
+
+    console.log(error);
   };
 
   const onPeopleFilterChange = (personId: number) => {
@@ -145,6 +149,21 @@ export default function Home() {
       )
     );
   };
+
+  const createCategory = async (name:string, description:string) => {
+   await supabase.from("categories").insert(
+      {
+        name,
+        description
+      }
+    );
+    
+    const { data } = await supabase.from("categories").select("*").order("id", {ascending: false}).limit(1).single();
+
+    if(data) {
+      setCategories((prev) => [...prev, {id: data!.id, name, description, isSelected: true}]);
+    }
+  }
   
 
   return (
@@ -158,6 +177,7 @@ export default function Home() {
             buttonText="Add a category"
             items={categories}
             onCategoryChange={onCategoryFilterChange}
+            onCreateCategory={createCategory}
           />
           <PeopleFilter
             title="People"

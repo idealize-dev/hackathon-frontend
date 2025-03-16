@@ -28,9 +28,9 @@ export default function PeopleFilter({
         ))}
       </div>
 
-      <div className="mt-auto">
+      {/* <div className="mt-auto">
         <Button className="w-full">{buttonText}</Button>
-      </div>
+      </div> */}
     </div>
   );
 }

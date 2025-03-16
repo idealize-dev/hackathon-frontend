@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Task } from "@/lib/definitions";
 import { useDrag, DragSourceMonitor } from "react-dnd";
+import { Badge } from "./ui/badge";
+
 
 export function TaskItem({ task }: { task: Task }) {
   const [{ isDragging }, drag] = useDrag<Task, void, { isDragging: boolean }>({
@@ -21,7 +23,10 @@ export function TaskItem({ task }: { task: Task }) {
       <div className="border flex flex-col bg-white p-4 rounded-lg gap-4">
         <h2 className="font-bold text-lg">{task.title}</h2>
         <p className="text-gray-500">{task.description}</p>
-        <Button className="w-fit">View</Button>
+        {
+          task.categories.map((category) => <Badge className="bg-blue-600" key={category.id}>{category.name}</Badge>)
+        }
+        {/* <Button className="w-fit">View</Button> */}
       </div>
     </div>
   );
